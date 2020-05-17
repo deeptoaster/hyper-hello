@@ -5,7 +5,34 @@ include(__DIR__ . '/../lib/include.php');
   <head>
 <?
 print_head('Hyperskelion');
-?>  </head>
+?>    <link href="hyper.css" rel="stylesheet" />
+    <script type="text/javascript">// <![CDATA[
+      $(function() {
+        $('.glitchable').attr('data-text', function() {
+          return $(this).text();
+        });
+
+        $(document).mousemove(function(e) {
+          document.body.style.backgroundPosition = -e.clientX / 40 + 'px';
+        });
+
+        $('input').change(function() {
+          if ($('input').filter(function() {
+            return $(this).val();
+          }).length >= 5) {
+            setTimeout(function() {
+              $('#main').addClass('glitching');
+            }, 1000);
+          }
+        });
+
+        $('form').submit(function() {
+          $(document.body).addClass('console');
+          return false;
+        })
+      });
+    // ]]></script>
+  </head>
   <body>
     <div id="main">
       <h1 class="glitchable">Hyperskelion</h1>
@@ -75,6 +102,12 @@ print_head('Hyperskelion');
           </div>
         </div>
       </form>
+    </div>
+    <div id="console">
+      <div class="console-centerpiece">
+        <div class="console-ring">
+      </div>
+      <div class="console-grid"></div>
     </div>
   </body>
 </html>
