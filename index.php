@@ -8,6 +8,9 @@ print_head('Hyperskelion');
 ?>    <link href="hyper.css" rel="stylesheet" />
     <script type="text/javascript">// <![CDATA[
       $(function() {
+        var textError = $('<div class="error">Please ensure that all fields contain a valid response.</div>')
+        var checkboxError = $('<div class="error">Please ensure that all checkboxes are checked.</div>')
+
         $('.glitchable').attr('data-text', function() {
           return $(this).text();
         });
@@ -27,7 +30,21 @@ print_head('Hyperskelion');
         });
 
         $('form').submit(function() {
-          $(document.body).addClass('console');
+          checkboxError.detach();
+          textError.detach();
+
+          if ($('input[type=text], textarea').filter(function() {
+            return !$(this).val();
+          }).length !== 0) {
+            $('h1').after(textError);
+          } else if ($('input[type=checkbox]').filter(function() {
+            return !$(this).prop('checked');
+          }).length !== 0) {
+            $('h1').after(checkboxError);
+          } else {
+            $(document.body).addClass('console');
+          }
+
           return false;
         })
       });
@@ -98,7 +115,7 @@ print_head('Hyperskelion');
         </div>
         <div class="form-control">
           <div class="input-group">
-            <input type="submit" value="Submit" />
+            <input class="btn-persistent" type="submit" value="Submit" />
           </div>
         </div>
       </form>
