@@ -113,7 +113,58 @@ print_head('Hyperskelion');
           </div>
         </div>
       </div>
-      <div class="console-grid"></div>
+      <div class="console-grid">
+        <div class="console-cell console-delay-2">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-0">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-1">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-2">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-0">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-0">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-1">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-2">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-2">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+        <div class="console-cell console-delay-1">
+          <div class="console-cell-outer">
+            <div class="console-cell-inner"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </body>
 </html>
