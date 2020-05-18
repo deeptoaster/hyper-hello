@@ -106,6 +106,12 @@ print_head('Hyperskelion');
     <div id="console">
       <div class="console-centerpiece">
         <div class="console-ring">
+          <div>
+            <img class="trim" src="trim.png" alt="" />
+            <img class="text" src="text.png" alt="" />
+            <img class="logo" src="logo.png" alt="" />
+          </div>
+        </div>
       </div>
       <div class="console-grid"></div>
     </div>

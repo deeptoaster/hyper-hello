@@ -15,6 +15,7 @@
   z-index: 1;
   min-height: 100%;
   background-color: #000;
+  overflow: auto;
 }
 .console #main {
   z-index: 0;
@@ -37,6 +38,8 @@
   width: 60%;
   height: 0;
   padding-top: 60%;
+  font-size: 10px;
+  font-size: 1vw;
   transform: translate(-50%, -50%);
 }
 .console-centerpiece::before, .console-centerpiece::after {
@@ -47,8 +50,7 @@
   left: 50%;
   width: 50%;
   height: 50%;
-  border: 8px solid #005f4c;
-  border: 0.8vw solid #005f4c;
+  border: 0.8em solid #005f4c;
   border-left-width: 0;
   border-bottom-width: 0;
   border-radius: 0 100% 0 0;
@@ -60,34 +62,59 @@
   transform-origin: bottom left;
 }
 .console-centerpiece::after {
-  padding: 30px;
-  padding: 0.3vw;
+  padding: 0.3em;
   animation-delay: -4s;
   animation-direction: reverse;
 }
 .console-ring, .console-ring::before, .console-ring::after {
   position: absolute;
-  border: 4px solid #005f4c;
-  border: 0.4vw solid #005f4c;
+  border: 0.4em solid #005f4c;
   border-radius: 50%;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
 }
+.console-ring {
+  padding: 1em;
+}
 .console-ring::before, .console-ring::after {
   content: '';
   display: block;
 }
 .console-ring::before {
-  margin: -20px;
-  margin: -2vw;
+  margin: -2em;
   opacity: 0.2;
 }
 .console-ring::after {
-  margin: 14px;
-  margin: 1.4vw;
+  margin: 1em;
+  opacity: 0.8;
+}
+.console-ring div {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.console-ring img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  animation-name: spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.console-ring img.trim {
   opacity: 0.6;
+  animation-duration: 8s;
+}
+.console-ring img.text {
+  animation-duration: 40s;
+  animation-direction: reverse;
+}
+.console-ring img.logo {
+  z-index: -1;
+  opacity: 0.2;
+  animation-duration: 24s;
 }
 @keyframes ring {
   0% {
@@ -107,5 +134,13 @@
   }
   100% {
     transform: rotate(1080deg);
+  }
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
