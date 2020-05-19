@@ -11,7 +11,7 @@ if ($create) {
     <<<EOF
 CREATE TABLE `users` (
   `id` integer PRIMARY KEY ASC,
-  `name` varchar(64) NOT NULL,
+  `name` varchar(64) UNIQUE NOT NULL,
   `class` integer NOT NULL,
   `memory` varchar(255) NOT NULL,
   `fear` varchar(255) NOT NULL,
@@ -227,6 +227,10 @@ print_head('Hyperskelion');
       </form>
     </div>
     <div id="console">
+      <div class="console-block console-delay-0"></div>
+      <div class="console-block console-delay-1"></div>
+      <div class="console-block console-delay-2"></div>
+      <div class="console-block console-delay-3"></div>
       <div class="console-centerpiece">
         <div class="console-ring">
           <div>
