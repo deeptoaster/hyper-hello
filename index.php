@@ -1,5 +1,34 @@
 <?
 include(__DIR__ . '/../lib/include.php');
+
+function hyper_fail($message) {
+  header('HTTP/1.1 400 Bad Request');
+  header('Status: 400 Bad Request');
+  die($message);
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+  if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
+    hyper_fail(
+      'First and last name must contain only letters, hyphens, and apostrophes.'
+    );
+  }
+
+  $class = (int)$_POST['class'];
+
+  if ($class < 0 || $class >= 3) {
+    hyper_fail('Invalid class selection.');
+  }
+
+  $memory = substr($_POST['memory'], 0, 255);
+  $fear = substr($_POST['fear'], 0, 255);
+
+  if (!in_array($_POST['blood'], array('A', 'B', 'AB', 'O'))) {
+    hyper_fail('Invalid blood type selection.');
+  }
+
+  die();
+}
 ?><!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
@@ -8,8 +37,15 @@ print_head('Hyperskelion');
 ?>    <link href="hyper.css" rel="stylesheet" />
     <script type="text/javascript">// <![CDATA[
       $(function() {
-        var textError = $('<div class="error">Please ensure that all fields contain a valid response.</div>')
-        var checkboxError = $('<div class="error">Please ensure that all checkboxes are checked.</div>')
+        var checkboxError = $(
+          '<div class="error">Please ensure that all checkboxes are checked.</div>'
+        );
+
+        var emptyError = $(
+          '<div class="error">Please ensure that all fields contain a valid response.</div>'
+        );
+
+        var genericError = $('<div class="error" />');
 
         $('.glitchable').attr('data-text', function() {
           return $(this).text();
@@ -31,18 +67,32 @@ print_head('Hyperskelion');
 
         $('form').submit(function() {
           checkboxError.detach();
-          textError.detach();
+          emptyError.detach();
+          genericError.detach();
 
           if ($('input[type=text], textarea').filter(function() {
             return !$(this).val();
           }).length !== 0) {
-            $('h1').after(textError);
+            $('#main h1').after(emptyError);
+            $('#main').scrollTop(0);
           } else if ($('input[type=checkbox]').filter(function() {
             return !$(this).prop('checked');
           }).length !== 0) {
-            $('h1').after(checkboxError);
+            $('#main h1').after(checkboxError);
+            $('#main').scrollTop(0);
           } else {
-            $(document.body).addClass('console');
+            $.post('./', {
+              name: $('#first').val().trim() + ' ' + $('#last').val().trim(),
+              class: $('#class').val(),
+              memory: $('#memory').val().trim(),
+              fear: $('#fear').val().trim(),
+              blood: $('#blood').val()
+            }).done(function() {
+              $(document.body).addClass('console');
+            }).fail(function(e) {
+              $('#main h1').after(genericError.text(e.responseText));
+              $(document).scrollTop(0);
+            });
           }
 
           return false;
@@ -75,22 +125,22 @@ print_head('Hyperskelion');
           </div>
           <div class="input-group input-group-right">
             <select id="class">
-              <option value="frosh">Frosh</option>
-              <option value="smore">Smore</option>
-              <option value="junior">Junior</option>
+              <option value="0">Frosh</option>
+              <option value="1">Smore</option>
+              <option value="2">Junior</option>
             </select>
           </div>
         </div>
         <div class="form-control">
           <label for="memory" class="glitchable">Favorite childhood memory</label>
           <div class="input-group">
-            <textarea id="memory" rows="4"></textarea>
+            <textarea id="memory" rows="4" maxlength="255"></textarea>
           </div>
         </div>
         <div class="form-control">
           <label for="fear" class="glitchable">Greatest fear</label>
           <div class="input-group">
-            <textarea id="fear" rows="4"></textarea>
+            <textarea id="fear" rows="4" maxlength="255"></textarea>
           </div>
         </div>
         <div class="form-control">
@@ -99,7 +149,7 @@ print_head('Hyperskelion');
             <label for="donor" class="glitchable">I am an organ donor; my blood type is</label>
           </div>
           <div class="input-group input-group-right">
-            <select>
+            <select id="blood">
               <option value="a">A</option>
               <option value="b">B</option>
               <option value="ab">AB</option>
