@@ -1,33 +1,93 @@
 <?
 include(__DIR__ . '/../lib/include.php');
 
-function hyper_fail($message) {
-  header('HTTP/1.1 400 Bad Request');
-  header('Status: 400 Bad Request');
-  die($message);
+$db = 'hyper.db';
+$create = !file_exists($db);
+$pdo = new PDO('sqlite:' . $db);
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+if ($create) {
+  $pdo->exec(
+    <<<EOF
+CREATE TABLE `users` (
+  `id` integer PRIMARY KEY ASC,
+  `name` varchar(64) NOT NULL,
+  `class` integer NOT NULL,
+  `memory` varchar(255) NOT NULL,
+  `fear` varchar(255) NOT NULL,
+  `blood` varchar(2) NOT NULL
+)
+EOF
+  );
+
+  $pdo->exec(
+    <<<EOF
+CREATE TABLE `assignments` (
+  `team` integer NOT NULL,
+  `user` integer NOT NULL
+)
+EOF
+  );
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-  if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
-    hyper_fail(
-      'First and last name must contain only letters, hyphens, and apostrophes.'
+  try {
+    if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
+      throw new InvalidArgumentException(
+        'First and last name must contain only letters, hyphens, and apostrophes.'
+      );
+    }
+
+    $class = (int)$_POST['class'];
+
+    if ($class < 0 || $class >= 3) {
+      throw new InvalidArgumentException('Invalid class selection.');
+    }
+
+    $memory = substr($_POST['memory'], 0, 255);
+    $fear = substr($_POST['fear'], 0, 255);
+
+    if (!in_array($_POST['blood'], array('A', 'B', 'AB', 'O'))) {
+      throw new InvalidArgumentException('Invalid blood type selection.');
+    }
+
+    $statement = $pdo->prepare(
+      <<<EOF
+INSERT INTO `users` (
+  `name`,
+  `class`,
+  `memory`,
+  `fear`,
+  `blood`
+)
+VALUES (
+  :name,
+  :class,
+  :memory,
+  :fear,
+  :blood
+)
+EOF
     );
+
+    if (!is_writable($db)) {
+      throw new InvalidArgumentException('Unable to write to database file.');
+    }
+
+    $statement->execute(array(
+      ':name' => $_POST['name'],
+      ':class' => $class,
+      ':memory' => $memory,
+      ':fear' => $fear,
+      ':blood' => $_POST['blood']
+    ));
+  } catch (Exception $e) {
+    header('HTTP/1.1 400 Bad Request');
+    header('Status: 400 Bad Request');
+    die($e->getMessage());
   }
 
-  $class = (int)$_POST['class'];
-
-  if ($class < 0 || $class >= 3) {
-    hyper_fail('Invalid class selection.');
-  }
-
-  $memory = substr($_POST['memory'], 0, 255);
-  $fear = substr($_POST['fear'], 0, 255);
-
-  if (!in_array($_POST['blood'], array('A', 'B', 'AB', 'O'))) {
-    hyper_fail('Invalid blood type selection.');
-  }
-
-  die();
+  die('success');
 }
 ?><!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -36,17 +96,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 print_head('Hyperskelion');
 ?>    <link href="hyper.css" rel="stylesheet" />
     <script type="text/javascript">// <![CDATA[
+      var error = $('<div class="error" />');
+
+      function fail(message) {
+        $('#main h1').after(error.text(message));
+        $('#main').scrollTop(0);
+      }
+
       $(function() {
-        var checkboxError = $(
-          '<div class="error">Please ensure that all checkboxes are checked.</div>'
-        );
-
-        var emptyError = $(
-          '<div class="error">Please ensure that all fields contain a valid response.</div>'
-        );
-
-        var genericError = $('<div class="error" />');
-
         $('.glitchable').attr('data-text', function() {
           return $(this).text();
         });
@@ -66,20 +123,16 @@ print_head('Hyperskelion');
         });
 
         $('form').submit(function() {
-          checkboxError.detach();
-          emptyError.detach();
-          genericError.detach();
+          error.detach();
 
           if ($('input[type=text], textarea').filter(function() {
             return !$(this).val();
           }).length !== 0) {
-            $('#main h1').after(emptyError);
-            $('#main').scrollTop(0);
+            fail('Please ensure that all fields contain a valid response.');
           } else if ($('input[type=checkbox]').filter(function() {
             return !$(this).prop('checked');
           }).length !== 0) {
-            $('#main h1').after(checkboxError);
-            $('#main').scrollTop(0);
+            fail('Please ensure that all checkboxes are checked.');
           } else {
             $.post('./', {
               name: $('#first').val().trim() + ' ' + $('#last').val().trim(),
@@ -87,11 +140,14 @@ print_head('Hyperskelion');
               memory: $('#memory').val().trim(),
               fear: $('#fear').val().trim(),
               blood: $('#blood').val()
-            }).done(function() {
-              $(document.body).addClass('console');
+            }).done(function(e) {
+              if (e != 'success') {
+                fail('An unknown error occurred.');
+              } else {
+                $(document.body).addClass('console');
+              }
             }).fail(function(e) {
-              $('#main h1').after(genericError.text(e.responseText));
-              $(document).scrollTop(0);
+              fail(e.responseText);
             });
           }
 
@@ -150,10 +206,10 @@ print_head('Hyperskelion');
           </div>
           <div class="input-group input-group-right">
             <select id="blood">
-              <option value="a">A</option>
-              <option value="b">B</option>
-              <option value="ab">AB</option>
-              <option value="o">O</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="AB">AB</option>
+              <option value="O">O</option>
             </select>
           </div>
         </div>
