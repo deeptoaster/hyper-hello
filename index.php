@@ -16,7 +16,8 @@ CREATE TABLE `users` (
   `class` integer NOT NULL,
   `memory` varchar(255) NOT NULL,
   `fear` varchar(255) NOT NULL,
-  `blood` varchar(2) NOT NULL
+  `blood` varchar(2) NOT NULL,
+  `token` char(8) UNIQUE NOT NULL
 )
 EOF
   );
@@ -29,6 +30,26 @@ CREATE TABLE `assignments` (
 )
 EOF
   );
+}
+
+if (!isset($_SESSION['hyper_id']) && isset($_COOKIE['hyper_token'])) {
+  $statement = $pdo->prepare(
+    <<<EOF
+SELECT `id`
+FROM `users`
+WHERE `token` = :token
+EOF
+  );
+
+  $statement->execute(array(
+    ':token' => $_COOKIE['hyper_token']
+  ));
+
+  $id = $statement->fetch(PDO::FETCH_COLUMN);
+
+  if ($id !== false) {
+    $_SESSION['hyper_id'] = $id;
+  }
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -57,6 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           throw new InvalidArgumentException('Invalid blood type selection.');
         }
 
+        $token = md5(mt_rand());
+
         $statement = $pdo->prepare(
           <<<EOF
 INSERT INTO `users` (
@@ -64,14 +87,16 @@ INSERT INTO `users` (
   `class`,
   `memory`,
   `fear`,
-  `blood`
+  `blood`,
+  `token`
 )
 VALUES (
   :name,
   :class,
   :memory,
   :fear,
-  :blood
+  :blood,
+  :token
 )
 EOF
         );
@@ -87,10 +112,12 @@ EOF
           ':class' => $class,
           ':memory' => $memory,
           ':fear' => $fear,
-          ':blood' => $_POST['blood']
+          ':blood' => $_POST['blood'],
+          ':token' => $token
         ));
 
         $_SESSION['hyper_id'] = $pdo->lastInsertId();
+        setcookie('hyper_token', $token, time() + 60 * 60 * 24 * 30);
         $response['message'] = 'success';
         break;
     }
@@ -108,7 +135,11 @@ EOF
 <?
 print_head('Hyperskelion');
 ?>    <link href="hyper.css" rel="stylesheet" />
+    <link href="//fonts.googleapis.com/css?family=Share+Tech+Mono|Audiowide" rel="stylesheet" type="text/css">
     <script type="text/javascript">// <![CDATA[
+<?
+if (!isset($_SESSION['hyper_id'])) {
+  echo <<<EOF
       var error = $('<div class="error" />');
 
       function fail(message) {
@@ -116,7 +147,13 @@ print_head('Hyperskelion');
         $('#main').scrollTop(0);
       }
 
-      $(function() {
+
+EOF;
+}
+?>      $(function() {
+<?
+if (!isset($_SESSION['hyper_id'])) {
+  echo <<<EOF
         $('.glitchable').attr('data-text', function() {
           return $(this).text();
         });
@@ -167,7 +204,15 @@ print_head('Hyperskelion');
 
           return false;
         });
-      });
+
+EOF;
+} else {
+  echo <<<EOF
+        setInterval(poll, 10000);
+
+EOF;
+}
+?>      });
     // ]]></script>
   </head>
 <?
@@ -268,52 +313,142 @@ EOF;
       <div class="console-grid">
         <div class="console-cell console-delay-2">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-0">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-1">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-2">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-0">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-0">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-1">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-2">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-2">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="console-cell console-delay-1">
           <div class="console-cell-outer">
-            <div class="console-cell-inner"></div>
+            <div class="console-cell-inner">
+              <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

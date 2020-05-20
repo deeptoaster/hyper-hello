@@ -39,7 +39,7 @@
   width: 6em;
   height: 6em;
   box-shadow: 0 0 1.2em #005f4c;
-  background-color: #0d1c19;
+  background-color: #002921;
   animation-name: block;
   animation-duration: 48s;
   animation-iteration-count: infinite;
@@ -143,6 +143,7 @@
   bottom: 0;
   left: 0;
   padding: 5%;
+  font-family: 'Share Tech Mono', monospace;
 }
 .console-cell {
   position: relative;
@@ -170,6 +171,7 @@
 .console-cell-outer {
   border-color: #adebde;
   background-color: rgba(82, 122, 114, 0.2);
+  cursor: pointer;
 }
 .console-delay-0 .console-cell-outer {
   transition-delay: 800ms;
@@ -192,91 +194,130 @@
 .console-delay-2 .console-cell-inner {
   transition-delay: 1100ms;
 }
+.console-cell ul {
+  list-style-type: square;
+  margin: 1em 1em 1em 2em;
+  padding: 0;
+  color: #adebde;
+}
+.console-cell-outer::after {
+  content: 'JOIN';
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(82, 122, 114, 0.8);
+  color: #adebde;
+  text-align: center;
+  font: bold 3em/6em Audiowide, cursive;
+}
+.console-cell-outer:hover::after {
+  display: block;
+}
 @keyframes block {
   0% {
     top: 20%;
     left: -20%;
     opacity: 0;
+    transform: rotate(0deg);
   }
   10% {
     top: 20%;
     left: 60%;
     opacity: 0.6;
+    transform: rotate(0deg);
   }
   19% {
     top: 20%;
     left: 100%;
     opacity: 0;
+    transform: rotate(0deg);
   }
   20% {
     top: 100%;
     left: 90%;
     opacity: 0;
+    transform: rotate(360deg);
   }
   29% {
     top: -20%;
     left: 90%;
     opacity: 0.6;
+    transform: rotate(360deg);
   }
   30% {
     top: -20%;
     left: 10%;
     opacity: 0;
+    transform: rotate(720deg);
   }
   40% {
     top: 30%;
     left: 10%;
     opacity: 0.6;
+    transform: rotate(720deg);
   }
   49% {
     top: 100%;
     left: 10%;
     opacity: 0;
+    transform: rotate(720deg);
   }
   50% {
     top: 80%;
     left: 100%;
     opacity: 0;
+    transform: rotate(1080deg);
   }
   59% {
     top: 80%;
     left: -20%;
     opacity: 0.6;
+    transform: rotate(1080deg);
   }
   60% {
     top: -20%;
     left: 60%;
     opacity: 0;
+    transform: rotate(1440deg);
   }
   69% {
     top: 100%;
     left: 60%;
     opacity: 0.6;
+    transform: rotate(1440deg);
   }
   70% {
     top: 40%;
     left: 100%;
     opacity: 0;
+    transform: rotate(1800deg);
   }
   80% {
     top: 40%;
     left: 50%;
     opacity: 0.6;
+    transform: rotate(1800deg);
   }
   89% {
     top: 40%;
     left: -20%;
     opacity: 0;
+    transform: rotate(1800deg);
   }
   90% {
     top: -20%;
     left: 70%;
     opacity: 0.6;
+    transform: rotate(2160deg);
   }
   99% {
     top: 100%;
     left: 70%;
     opacity: 0;
+    transform: rotate(2160deg);
   }
 }
 @keyframes ring {
