@@ -4,7 +4,8 @@ WITH `classes` (`id`, `name`) AS (
     (2, 'junior')
 )
 SELECT `assignments`.`team`,
-  `users`.`name` || ' (' || `users`.`class` || ')'
+  `users`.`name` || ' (' || `classes`.`name` || ')'
 FROM `assignments`
 INNER JOIN `users` ON `users`.`id` = `assignments`.`user`
 INNER JOIN `classes` ON `classes`.`id` = `users`.`class`
+ORDER BY `users`.`class`

@@ -136,13 +136,21 @@
   opacity: 0.2;
   animation-duration: 24s;
 }
+.console-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  height: 0;
+  padding-top: 50%;
+  transform: translate(-50%, -50%);
+}
 .console-grid {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
-  padding: 5%;
   font-family: 'Share Tech Mono', monospace;
 }
 .console-cell {
@@ -183,6 +191,7 @@
 }
 .console-cell-inner {
   border-color: #527a72;
+  overflow: hidden;
 }
 .console-delay-0 .console-cell-inner {
   transition-delay: 1000ms;
@@ -198,6 +207,7 @@
   margin: 1em 1em 1em 2em;
   padding: 0;
   color: #adebde;
+  line-height: 1.5;
 }
 .console-cell-outer::after {
   content: 'JOIN';

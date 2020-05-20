@@ -16,7 +16,7 @@ if ($create) {
     <<<EOF
 CREATE TABLE `users` (
   `id` integer PRIMARY KEY ASC,
-  `name` varchar(64) UNIQUE NOT NULL,
+  `name` varchar(41) UNIQUE NOT NULL,
   `class` integer NOT NULL,
   `memory` varchar(255) NOT NULL,
   `fear` varchar(255) NOT NULL,
@@ -34,6 +34,10 @@ CREATE TABLE `assignments` (
 )
 EOF
   );
+
+  unset($_SESSION['hyper_id']);
+  unset($_COOKIE['hyper_token']);
+  setcookie('hyper_token', '', time());
 }
 
 if (!isset($_SESSION['hyper_id']) && isset($_COOKIE['hyper_token'])) {
@@ -63,19 +67,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   try {
     switch ($_POST['action']) {
       case 'join':
-      case 'update':
-        $statement = $pdo->prepare(file_get_contents('fetch.sql'));
-        $statement->execute();
+        if (!isset($_SESSION['hyper_id'])) {
+          throw new BadFunctionCallException('You are not registered.');
+        }
+
+        if (!isset($_POST['team'])) {
+          throw new BadFunctionCallException('Missing team selection.');
+        }
+
+        $team = (int)$_POST['team'];
+
+        if ($team < 0 || $team >= $config['hyper_team_count']) {
+          $team_max = $config['hyper_team_count'] - 1;
+
+          throw new OutOfBoundsException(
+            "Team ID must be between 0 and $team_max."
+          );
+        }
+
+        $statement = $pdo->prepare(
+          <<<EOF
+INSERT OR REPLACE INTO `assignments` (
+  `team`,
+  `user`
+)
+VALUES (
+  :team,
+  :user
+)
+EOF
+        );
+
+        $statement->execute(array(
+          ':team' => $team,
+          ':user' => $_SESSION['hyper_id']
+        ));
 
         $response['assignments'] = json_encode(
           $statement->fetchAll(PDO::FETCH_COLUMN | PDO::FETCH_GROUP)
         );
-
+      case 'update':
+        $statement = $pdo->prepare(file_get_contents('fetch.sql'));
+        $statement->execute();
+        $response['assignments'] =
+            $statement->fetchAll(PDO::FETCH_COLUMN | PDO::FETCH_GROUP);
         break;
       case 'register':
         if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
           throw new InvalidArgumentException(
             'First and last name must contain only letters, hyphens, and apostrophes.'
+          );
+        }
+
+        if (!strlen($_POST['name']) >= 42) {
+          throw new InvalidArgumentException(
+            'Please enter a shorter name.'
           );
         }
 
@@ -175,15 +221,20 @@ echo <<<EOF
 
         for (var i = 0; i < $config[hyper_team_count]; i++) {
           \$cells.eq(i).find('li').text(function(j) {
-            (data.assignments[i] || [])[j];
+            console.log(i, j, (data.assignments[i] || [])[j] || '');
+            return (data.assignments[i] || [])[j] || '';
           });
         }
       }
 
       $(function() {
         $('.console-cell').click(function() {
-          $(this).addClass('active');
-          $.post('./', {action: 'join', team: $(this).index()}, update);
+          var \$active = $(this).addClass('active');
+
+          $.post('./', {action: 'join', team: $(this).index()}, function(data) {
+            update(data);
+            \$active.removeClass('active');
+          });
         });
 
 
@@ -270,13 +321,13 @@ EOF;
         <div class="form-control">
           <label for="first" class="glitchable">First name</label>
           <div class="input-group">
-            <input type="text" id="first" />
+            <input type="text" id="first" maxlength="20" />
           </div>
         </div>
         <div class="form-control">
           <label for="last" class="glitchable">Last name</label>
           <div class="input-group">
-            <input type="text" id="last" />
+            <input type="text" id="last" maxlength="20" />
           </div>
         </div>
         <div class="form-control">
@@ -348,144 +399,146 @@ EOF;
           </div>
         </div>
       </div>
-      <div class="console-grid">
-        <div class="console-cell console-delay-2">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+      <div class="console-content">
+        <div class="console-grid">
+          <div class="console-cell console-delay-2">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-0">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-0">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-1">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-1">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-2">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-2">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-0">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-0">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-0">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-0">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-1">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-1">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-2">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-2">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-2">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-2">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="console-cell console-delay-1">
-          <div class="console-cell-outer">
-            <div class="console-cell-inner">
-              <ul>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ul>
+          <div class="console-cell console-delay-1">
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
