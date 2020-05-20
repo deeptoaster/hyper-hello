@@ -1,6 +1,7 @@
 <?
 include(__DIR__ . '/../lib/include.php');
 
+session_start();
 $db = 'hyper.db';
 $create = !file_exists($db);
 $pdo = new PDO('sqlite:' . $db);
@@ -31,28 +32,33 @@ EOF
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+  $response = array();
+  header('Content-Type: application/json');
+
   try {
-    if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
-      throw new InvalidArgumentException(
-        'First and last name must contain only letters, hyphens, and apostrophes.'
-      );
-    }
+    switch ($_POST['action']) {
+      case 'register':
+        if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
+          throw new InvalidArgumentException(
+            'First and last name must contain only letters, hyphens, and apostrophes.'
+          );
+        }
 
-    $class = (int)$_POST['class'];
+        $class = (int)$_POST['class'];
 
-    if ($class < 0 || $class >= 3) {
-      throw new InvalidArgumentException('Invalid class selection.');
-    }
+        if ($class < 0 || $class >= 3) {
+          throw new InvalidArgumentException('Invalid class selection.');
+        }
 
-    $memory = substr($_POST['memory'], 0, 255);
-    $fear = substr($_POST['fear'], 0, 255);
+        $memory = substr($_POST['memory'], 0, 255);
+        $fear = substr($_POST['fear'], 0, 255);
 
-    if (!in_array($_POST['blood'], array('A', 'B', 'AB', 'O'))) {
-      throw new InvalidArgumentException('Invalid blood type selection.');
-    }
+        if (!in_array($_POST['blood'], array('A', 'B', 'AB', 'O'))) {
+          throw new InvalidArgumentException('Invalid blood type selection.');
+        }
 
-    $statement = $pdo->prepare(
-      <<<EOF
+        $statement = $pdo->prepare(
+          <<<EOF
 INSERT INTO `users` (
   `name`,
   `class`,
@@ -68,26 +74,33 @@ VALUES (
   :blood
 )
 EOF
-    );
+        );
 
-    if (!is_writable($db)) {
-      throw new InvalidArgumentException('Unable to write to database file.');
+        if (!is_writable($db)) {
+          throw new InvalidArgumentException(
+            'Unable to write to database file.'
+          );
+        }
+
+        $statement->execute(array(
+          ':name' => $_POST['name'],
+          ':class' => $class,
+          ':memory' => $memory,
+          ':fear' => $fear,
+          ':blood' => $_POST['blood']
+        ));
+
+        $_SESSION['hyper_id'] = $pdo->lastInsertId();
+        $response['message'] = 'success';
+        break;
     }
-
-    $statement->execute(array(
-      ':name' => $_POST['name'],
-      ':class' => $class,
-      ':memory' => $memory,
-      ':fear' => $fear,
-      ':blood' => $_POST['blood']
-    ));
   } catch (Exception $e) {
     header('HTTP/1.1 400 Bad Request');
     header('Status: 400 Bad Request');
-    die($e->getMessage());
+    $response['message'] = $e->getMessage();
   }
 
-  die('success');
+  die(json_encode($response));
 }
 ?><!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -135,27 +148,36 @@ print_head('Hyperskelion');
             fail('Please ensure that all checkboxes are checked.');
           } else {
             $.post('./', {
+              action: 'register',
               name: $('#first').val().trim() + ' ' + $('#last').val().trim(),
               class: $('#class').val(),
               memory: $('#memory').val().trim(),
               fear: $('#fear').val().trim(),
               blood: $('#blood').val()
-            }).done(function(e) {
-              if (e != 'success') {
+            }).done(function(data) {
+              if (data.message != 'success') {
                 fail('An unknown error occurred.');
               } else {
                 $(document.body).addClass('console');
               }
-            }).fail(function(e) {
-              fail(e.responseText);
+            }).fail(function(xhr) {
+              fail(xhr.responseJSON.message);
             });
           }
 
           return false;
-        })
+        });
       });
     // ]]></script>
   </head>
+<?
+if (isset($_SESSION['hyper_id'])) {
+  echo <<<EOF
+  <body class="console">
+
+EOF;
+} else {
+  echo <<<EOF
   <body>
     <div id="main">
       <h1 class="glitchable">Hyperskelion</h1>
@@ -226,7 +248,10 @@ print_head('Hyperskelion');
         </div>
       </form>
     </div>
-    <div id="console">
+
+EOF;
+}
+?>    <div id="console">
       <div class="console-block console-delay-0"></div>
       <div class="console-block console-delay-1"></div>
       <div class="console-block console-delay-2"></div>
