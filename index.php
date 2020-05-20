@@ -1,10 +1,14 @@
 <?
 include(__DIR__ . '/../lib/include.php');
 
+$config = array(
+  'hyper_team_count' => 10,
+  'hyper_db' => 'hyper.db'
+);
+
 session_start();
-$db = 'hyper.db';
-$create = !file_exists($db);
-$pdo = new PDO('sqlite:' . $db);
+$create = !file_exists($config['hyper_db']);
+$pdo = new PDO('sqlite:' . $config['hyper_db']);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 if ($create) {
@@ -26,7 +30,7 @@ EOF
     <<<EOF
 CREATE TABLE `assignments` (
   `team` integer NOT NULL,
-  `user` integer NOT NULL
+  `user` integer UNIQUE NOT NULL
 )
 EOF
   );
@@ -58,6 +62,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
   try {
     switch ($_POST['action']) {
+      case 'join':
+      case 'update':
+        $statement = $pdo->prepare(file_get_contents('fetch.sql'));
+        $statement->execute();
+
+        $response['assignments'] = json_encode(
+          $statement->fetchAll(PDO::FETCH_COLUMN | PDO::FETCH_GROUP)
+        );
+
+        break;
       case 'register':
         if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
           throw new InvalidArgumentException(
@@ -101,7 +115,7 @@ VALUES (
 EOF
         );
 
-        if (!is_writable($db)) {
+        if (!is_writable($config['hyper_db'])) {
           throw new InvalidArgumentException(
             'Unable to write to database file.'
           );
@@ -140,18 +154,41 @@ print_head('Hyperskelion');
 <?
 if (!isset($_SESSION['hyper_id'])) {
   echo <<<EOF
-      var error = $('<div class="error" />');
+      var \$error = $('<div class="error" />');
 
       function fail(message) {
-        $('#main h1').after(error.text(message));
+        $('#main h1').after(\$error.text(message));
         $('#main').scrollTop(0);
       }
 
 
 EOF;
 }
-?>      $(function() {
-<?
+
+echo <<<EOF
+      function poll() {
+        $.post('./', {action: 'update'}, update);
+      }
+
+      function update(data) {
+        var \$cells = $('.console-cell');
+
+        for (var i = 0; i < $config[hyper_team_count]; i++) {
+          \$cells.eq(i).find('li').text(function(j) {
+            (data.assignments[i] || [])[j];
+          });
+        }
+      }
+
+      $(function() {
+        $('.console-cell').click(function() {
+          $(this).addClass('active');
+          $.post('./', {action: 'join', team: $(this).index()}, update);
+        });
+
+
+EOF;
+
 if (!isset($_SESSION['hyper_id'])) {
   echo <<<EOF
         $('.glitchable').attr('data-text', function() {
@@ -173,7 +210,7 @@ if (!isset($_SESSION['hyper_id'])) {
         });
 
         $('form').submit(function() {
-          error.detach();
+          \$error.detach();
 
           if ($('input[type=text], textarea').filter(function() {
             return !$(this).val();
@@ -196,6 +233,7 @@ if (!isset($_SESSION['hyper_id'])) {
                 fail('An unknown error occurred.');
               } else {
                 $(document.body).addClass('console');
+                setInterval(poll, 10000);
               }
             }).fail(function(xhr) {
               fail(xhr.responseJSON.message);
