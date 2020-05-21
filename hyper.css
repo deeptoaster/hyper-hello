@@ -28,6 +28,7 @@
   opacity: 0;
   transform: scale(0.5);
   transition-delay: 300ms;
+  user-select: none;
 }
 .console #console {
   opacity: 1;
@@ -156,7 +157,7 @@
 .console-cell {
   position: relative;
   float: left;
-  width: 20%;
+  width: 25%;
   height: 50%;
 }
 .console-cell-outer, .console-cell-inner {
@@ -207,6 +208,7 @@
   margin: 1em 1em 1em 2em;
   padding: 0;
   color: #adebde;
+  font-size: 1.2em;
   line-height: 1.5;
 }
 .console-cell-outer::after {
@@ -220,22 +222,48 @@
   background-color: rgba(82, 122, 114, 0.8);
   color: #adebde;
   text-align: center;
-  font: bold 3em/6em Audiowide, cursive;
+  font: bold 3em/6 Audiowide, cursive;
   cursor: pointer;
 }
 .console-cell-outer:hover::after {
   display: block;
 }
-.console-cell.active .console-cell-outer::after,
-.console-cell.selected .console-cell-outer::after {
-  background-color: rgba(82, 122, 114, 0.6);
-  cursor: default;
-}
 .console-cell.active .console-cell-outer::after {
+  background-color: rgba(82, 122, 114, 0.6);
   display: block;
+  cursor: default;
   animation-name: blink;
   animation-duration: 600ms;
   animation-iteration-count: infinite;
+}
+.console-cell.selected .console-cell-outer::after {
+  content: '\2714';
+  background-color: rgba(130, 140, 103, 0.6);
+  display: block;
+  font-size: 6em;
+  line-height: 3;
+  cursor: default;
+}
+.console-status {
+  position: absolute;
+  bottom: 1em;
+  left: 50%;
+  width: 24em;
+  height: 2em;
+  margin: 0 -12em;
+  border-radius: 0.5em;
+  box-shadow: 0 0 0.2em 0.1em #828c67;
+  padding: 0.5em;
+  background-color: #828c67;
+  color: #000a08;
+  text-align: center;
+  font: bold 2em/2 'Share Tech Mono', monospace;
+  opacity: 0.8;
+  cursor: default;
+  transition: opacity 200ms;
+}
+.console-status:hover {
+  opacity: 0.3;
 }
 @keyframes blink {
   0% {

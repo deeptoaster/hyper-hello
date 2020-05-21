@@ -2,7 +2,7 @@
 include(__DIR__ . '/../lib/include.php');
 
 $config = array(
-  'hyper_team_count' => 10,
+  'hyper_team_count' => 8,
   'hyper_db' => 'hyper.db'
 );
 
@@ -111,6 +111,25 @@ EOF
         $statement->execute();
         $response['assignments'] =
             $statement->fetchAll(PDO::FETCH_COLUMN | PDO::FETCH_GROUP);
+
+        $statement = $pdo->prepare(
+          <<<EOF
+SELECT `team`
+FROM `assignments`
+WHERE `user` = :user
+EOF
+        );
+
+        $statement->execute(array(
+          ':user' => @$_SESSION['hyper_id']
+        ));
+
+        $selected = $statement->fetch(PDO::FETCH_COLUMN);
+
+        if ($selected !== false) {
+          $response['selected'] = $selected;
+        }
+
         break;
       case 'register':
         if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
@@ -220,7 +239,11 @@ echo <<<EOF
         var \$cells = $('.console-cell');
 
         for (var i = 0; i < $config[hyper_team_count]; i++) {
-          \$cells.eq(i).find('li').text(function(j) {
+          \$cells
+              .eq(i)
+              .toggleClass('selected', data.selected == i)
+              .find('li')
+              .text(function(j) {
             console.log(i, j, (data.assignments[i] || [])[j] || '');
             return (data.assignments[i] || [])[j] || '';
           });
@@ -228,10 +251,10 @@ echo <<<EOF
       }
 
       $(function() {
-        $('.console-cell').click(function() {
-          var \$active = $(this).addClass('active');
+        $('.console-cell-outer').click(function() {
+          var \$active = $(this).parent().addClass('active');
 
-          $.post('./', {action: 'join', team: $(this).index()}, function(data) {
+          $.post('./', {action: 'join', team: \$active.index()}, function(data) {
             update(data);
             \$active.removeClass('active');
           });
@@ -285,6 +308,7 @@ if (!isset($_SESSION['hyper_id'])) {
               } else {
                 $(document.body).addClass('console');
                 setInterval(poll, 10000);
+                poll();
               }
             }).fail(function(xhr) {
               fail(xhr.responseJSON.message);
@@ -298,6 +322,7 @@ EOF;
 } else {
   echo <<<EOF
         setInterval(poll, 10000);
+        poll();
 
 EOF;
 }
@@ -513,36 +538,9 @@ EOF;
               </div>
             </div>
           </div>
-          <div class="console-cell console-delay-2">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="console-cell console-delay-1">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
+      <div class="console-status">This is a test.</div>
     </div>
   </body>
 </html>
