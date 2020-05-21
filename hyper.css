@@ -205,11 +205,11 @@
 }
 .console-cell ul {
   list-style-type: square;
-  margin: 1em 1em 1em 2em;
+  margin: 0.5em 1em 0.5em 2em;
   padding: 0;
   color: #adebde;
   font-size: 1.2em;
-  line-height: 1.5;
+  line-height: 1.1;
 }
 .console-cell-outer::after {
   content: 'JOIN';
@@ -249,18 +249,23 @@
   bottom: 1em;
   left: 50%;
   width: 24em;
-  height: 2em;
+  max-height: 4em;
   margin: 0 -12em;
   border-radius: 0.5em;
-  box-shadow: 0 0 0.2em 0.1em #828c67;
+  box-shadow: 0 0 0.2em 0.1em #88995c;
   padding: 0.5em;
-  background-color: #828c67;
+  background-color: #88995c;
   color: #000a08;
   text-align: center;
   font: bold 2em/2 'Share Tech Mono', monospace;
-  opacity: 0.8;
+  white-space: pre-line;
+  opacity: 0.9;
   cursor: default;
-  transition: opacity 200ms;
+  transition: box-shadow 200ms, background-color 200ms, opacity 200ms;
+}
+.console-status.error {
+  box-shadow: 0 0 0.2em 0.1em #99745c;
+  background-color: #99745c;
 }
 .console-status:hover {
   opacity: 0.3;

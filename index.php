@@ -1,9 +1,16 @@
 <?
+define(
+  'HYPER_STATUS_0800',
+  "The time is now 8:00 Blacker Time.\nSelect a team to join."
+);
+
 include(__DIR__ . '/../lib/include.php');
 
 $config = array(
   'hyper_team_count' => 8,
-  'hyper_db' => 'hyper.db'
+  'hyper_team_size' => 8,
+  'hyper_db' => 'hyper.db',
+  'hyper_status' => 'hyper.txt'
 );
 
 session_start();
@@ -38,6 +45,10 @@ EOF
   unset($_SESSION['hyper_id']);
   unset($_COOKIE['hyper_token']);
   setcookie('hyper_token', '', time());
+}
+
+if (!is_file($config['hyper_status'])) {
+  file_put_contents($config['hyper_status'], HYPER_STATUS_0800);
 }
 
 if (!isset($_SESSION['hyper_id']) && isset($_COOKIE['hyper_token'])) {
@@ -130,6 +141,7 @@ EOF
           $response['selected'] = $selected;
         }
 
+        $response['status'] = file_get_contents($config['hyper_status']);
         break;
       case 'register':
         if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
@@ -220,6 +232,7 @@ print_head('Hyperskelion');
 if (!isset($_SESSION['hyper_id'])) {
   echo <<<EOF
       var \$error = $('<div class="error" />');
+      var status = null;
 
       function fail(message) {
         $('#main h1').after(\$error.text(message));
@@ -244,10 +257,11 @@ echo <<<EOF
               .toggleClass('selected', data.selected == i)
               .find('li')
               .text(function(j) {
-            console.log(i, j, (data.assignments[i] || [])[j] || '');
             return (data.assignments[i] || [])[j] || '';
           });
         }
+
+        $('.console-status').text(data.status);
       }
 
       $(function() {
@@ -426,121 +440,39 @@ EOF;
       </div>
       <div class="console-content">
         <div class="console-grid">
-          <div class="console-cell console-delay-2">
+<?
+$order = range(0, $config['hyper_team_count'] - 1);
+shuffle($order);
+
+foreach ($order as $item) {
+  $delay = floor($item / 3);
+
+  echo <<<EOF
+          <div class="console-cell console-delay-$delay">
             <div class="console-cell-outer">
               <div class="console-cell-inner">
                 <ul>
+
+EOF;
+
+  for ($i = 0; $i < $config['hyper_team_size']; $i++) {
+    echo <<<EOF
                   <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
+
+EOF;
+  }
+
+  echo <<<EOF
                 </ul>
               </div>
             </div>
           </div>
-          <div class="console-cell console-delay-0">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="console-cell console-delay-1">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="console-cell console-delay-2">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="console-cell console-delay-0">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="console-cell console-delay-0">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="console-cell console-delay-1">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div class="console-cell console-delay-2">
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
+
+EOF;
+}
+?>        </div>
       </div>
-      <div class="console-status">This is a test.</div>
+      <div class="console-status"></div>
     </div>
   </body>
 </html>
