@@ -42,6 +42,7 @@ CREATE TABLE `assignments` (
 EOF
   );
 
+  unset($_SESSION['hyper_class']);
   unset($_SESSION['hyper_id']);
   unset($_COOKIE['hyper_token']);
   setcookie('hyper_token', '', time());
@@ -54,7 +55,8 @@ if (!is_file($config['hyper_status'])) {
 if (!isset($_SESSION['hyper_id']) && isset($_COOKIE['hyper_token'])) {
   $statement = $pdo->prepare(
     <<<EOF
-SELECT `id`
+SELECT `id`,
+  `class`
 FROM `users`
 WHERE `token` = :token
 EOF
@@ -64,10 +66,11 @@ EOF
     ':token' => $_COOKIE['hyper_token']
   ));
 
-  $id = $statement->fetch(PDO::FETCH_COLUMN);
+  $row = $statement->fetch(PDO::FETCH_ASSOC);
 
-  if ($id !== false) {
-    $_SESSION['hyper_id'] = $id;
+  if ($row !== false) {
+    $_SESSION['hyper_class'] = $row['class'];
+    $_SESSION['hyper_id'] = $row['id'];
   }
 }
 
@@ -96,6 +99,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           );
         }
 
+        $pdo->exec('BEGIN EXCLUSIVE TRANSACTION');
+
+        $statement = $pdo->prepare(
+          <<<EOF
+SELECT `users`.`class`,
+COUNT(*)
+FROM `assignments`
+INNER JOIN `users` ON `users`.`id` = `assignments`.`user`
+WHERE `assignments`.`team` = :team
+GROUP BY `users`.`class`
+EOF
+        );
+
+        $statement->execute(array(
+          ':team' => $team
+        ));
+
+        $classes = $statement->fetchAll(PDO::FETCH_GROUP|PDO::FETCH_KEY_PAIR);
+
+        if (
+          $_SESSION['hyper_class'] == 0 &&
+              @$classes[0] >= $config['hyper_team_size'] -
+              !(@$classes[1] + @$classes[2]) - 1
+        ) {
+          throw new OverflowException(
+            'This team has too many frosh.'
+          );
+        }
+
+        if (
+          @$classes[1] + @$classes[2] + @$classes[1] >=
+              $config['hyper_team_size']
+        ) {
+          throw new OverflowException(
+            'This team is full.'
+          );
+        }
+
         $statement = $pdo->prepare(
           <<<EOF
 INSERT OR REPLACE INTO `assignments` (
@@ -117,6 +158,8 @@ EOF
         $response['assignments'] = json_encode(
           $statement->fetchAll(PDO::FETCH_COLUMN | PDO::FETCH_GROUP)
         );
+
+        $pdo->exec('COMMIT');
       case 'update':
         $statement = $pdo->prepare(file_get_contents('fetch.sql'));
         $statement->execute();
@@ -141,7 +184,7 @@ EOF
           $response['selected'] = $selected;
         }
 
-        $response['status'] = file_get_contents($config['hyper_status']);
+        $response['message'] = trim(file_get_contents($config['hyper_status']));
         break;
       case 'register':
         if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
@@ -207,6 +250,7 @@ EOF
           ':token' => $token
         ));
 
+        $_SESSION['hyper_class'] = $class;
         $_SESSION['hyper_id'] = $pdo->lastInsertId();
         setcookie('hyper_token', $token, time() + 60 * 60 * 24 * 30);
         $response['message'] = 'success';
@@ -232,9 +276,8 @@ print_head('Hyperskelion');
 if (!isset($_SESSION['hyper_id'])) {
   echo <<<EOF
       var \$error = $('<div class="error" />');
-      var status = null;
 
-      function fail(message) {
+      function prefail(message) {
         $('#main h1').after(\$error.text(message));
         $('#main').scrollTop(0);
       }
@@ -244,8 +287,33 @@ EOF;
 }
 
 echo <<<EOF
+      var statusCache;
+      var timeout = 0;
+      var \$status;
+
+      function postfail(message) {
+        clearTimeout(timeout);
+
+        console.log(status);
+
+        if (statusCache == null) {
+          statusCache = \$status.text();
+        }
+
+        console.log(statusCache);
+
+        \$status.addClass('error').text(message);
+
+        timeout = setTimeout(function() {
+          \$status.removeClass('error').text(statusCache);
+          statusCache = null;
+        }, 2500);
+      }
+
       function poll() {
-        $.post('./', {action: 'update'}, update);
+        $.post('./', {action: 'update'}).done(update).fail(function(xhr) {
+          postfail(xhr.responseJSON.message);
+        });
       }
 
       function update(data) {
@@ -261,15 +329,29 @@ echo <<<EOF
           });
         }
 
-        $('.console-status').text(data.status);
+        if (statusCache == null) {
+          \$status.text(data.message);
+        } else {
+          statusCache = data.message;
+        }
       }
 
       $(function() {
+        statusCache = null;
+        \$status = $('.console-status');
+
         $('.console-cell-outer').click(function() {
           var \$active = $(this).parent().addClass('active');
 
-          $.post('./', {action: 'join', team: \$active.index()}, function(data) {
+          $.post('./', {
+            action: 'join',
+            team: \$active.index()
+          }).done(function(data) {
             update(data);
+            \$active.removeClass('active');
+          }).fail(function(xhr) {
+          console.log(xhr);
+            postfail(xhr.responseJSON.message);
             \$active.removeClass('active');
           });
         });
@@ -303,11 +385,11 @@ if (!isset($_SESSION['hyper_id'])) {
           if ($('input[type=text], textarea').filter(function() {
             return !$(this).val();
           }).length !== 0) {
-            fail('Please ensure that all fields contain a valid response.');
+            prefail('Please ensure that all fields contain a valid response.');
           } else if ($('input[type=checkbox]').filter(function() {
             return !$(this).prop('checked');
           }).length !== 0) {
-            fail('Please ensure that all checkboxes are checked.');
+            prefail('Please ensure that all checkboxes are checked.');
           } else {
             $.post('./', {
               action: 'register',
@@ -318,14 +400,14 @@ if (!isset($_SESSION['hyper_id'])) {
               blood: $('#blood').val()
             }).done(function(data) {
               if (data.message != 'success') {
-                fail('An unknown error occurred.');
+                prefail('An unknown error occurred.');
               } else {
                 $(document.body).addClass('console');
                 setInterval(poll, 10000);
                 poll();
               }
             }).fail(function(xhr) {
-              fail(xhr.responseJSON.message);
+              prefail(xhr.responseJSON.message);
             });
           }
 
@@ -335,7 +417,7 @@ if (!isset($_SESSION['hyper_id'])) {
 EOF;
 } else {
   echo <<<EOF
-        setInterval(poll, 10000);
+        setInterval(poll, 5000);
         poll();
 
 EOF;
