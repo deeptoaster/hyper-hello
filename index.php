@@ -8,17 +8,35 @@ include(__DIR__ . '/../lib/include.php');
 
 $config = array(
   'hyper_team_count' => 8,
-  'hyper_team_overflow' => 2,
+  'hyper_team_overflow_count' => 2,
   'hyper_team_size' => 8,
   'hyper_db' => 'hyper.db',
+  'hyper_fetch_statement' => 'hyper.sql',
+  'hyper_overflow_flag' => 'hyper.flag',
   'hyper_status' => 'hyper.txt'
+);
+
+$alums = array(
+  'Anne',
+  'Diandra',
+  'Tom',
+  'Aaron S.',
+  'Will L.',
+  'Amy',
+  'Kshu',
+  'Julie'
+);
+
+$overflow_alums = array(
+  'Aaron F.',
+  'Xander'
 );
 
 session_start();
 $create = !file_exists($config['hyper_db']);
 $pdo = new PDO('sqlite:' . $config['hyper_db']);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$team_max = $config['hyper_team_count'] + $config['hyper_team_overflow'] - 1;
+$team_max = $config['hyper_team_count'] + $config['hyper_team_overflow_count'] - 1;
 
 if ($create) {
   $pdo->exec(
@@ -155,13 +173,10 @@ EOF
           ':user' => $_SESSION['hyper_id']
         ));
 
-        $response['assignments'] = json_encode(
-          $statement->fetchAll(PDO::FETCH_COLUMN | PDO::FETCH_GROUP)
-        );
-
         $pdo->exec('COMMIT');
       case 'update':
-        $statement = $pdo->prepare(file_get_contents('fetch.sql'));
+        $statement =
+            $pdo->prepare(file_get_contents($config['hyper_fetch_statement']));
         $statement->execute();
         $response['assignments'] =
             $statement->fetchAll(PDO::FETCH_COLUMN | PDO::FETCH_GROUP);
@@ -185,6 +200,7 @@ EOF
         }
 
         $response['message'] = trim(file_get_contents($config['hyper_status']));
+        $response['overflow'] = file_exists($config['hyper_overflow_flag']);
         break;
       case 'register':
         if (!preg_match('/^[A-Za-z\'-]+( [A-Za-z\'-]+)+$/', $_POST['name'])) {
@@ -253,6 +269,14 @@ EOF
         $_SESSION['hyper_class'] = $class;
         $_SESSION['hyper_id'] = $pdo->lastInsertId();
         setcookie('hyper_token', $token, time() + 60 * 60 * 24 * 30);
+
+        if (
+          $_SESSION['hyper_id'] - 1 ==
+              ($config['hyper_team_count'] - 0.5) * $config['hyper_team_size']
+        ) {
+          touch($_SESSION['hyper_overflow_flag']);
+        }
+
         $response['message'] = 'success';
         break;
     }
@@ -290,17 +314,14 @@ echo <<<EOF
       var statusCache;
       var timeout = 0;
       var \$status;
+      var trigger = 'The time is now 8:05 Blacker Time.';
 
       function postfail(message) {
         clearTimeout(timeout);
 
-        console.log(status);
-
         if (statusCache == null) {
           statusCache = \$status.text();
         }
-
-        console.log(statusCache);
 
         \$status.addClass('error').text(message);
 
@@ -324,6 +345,7 @@ echo <<<EOF
               .eq(i)
               .toggleClass('selected', data.selected == i)
               .find('li')
+              .slice(1)
               .text(function(j) {
             return (data.assignments[i] || [])[j] || '';
           });
@@ -334,6 +356,13 @@ echo <<<EOF
         } else {
           statusCache = data.message;
         }
+
+        $(document.body)
+            .toggleClass('overflow', data.overflow)
+            .toggleClass(
+          'complete',
+          data.message.slice(0, trigger.length) == trigger
+        );
       }
 
       $(function() {
@@ -350,7 +379,6 @@ echo <<<EOF
             update(data);
             \$active.removeClass('active');
           }).fail(function(xhr) {
-          console.log(xhr);
             postfail(xhr.responseJSON.message);
             \$active.removeClass('active');
           });
@@ -525,43 +553,47 @@ EOF;
 <?
 $order = range(0, $config['hyper_team_count'] - 1);
 shuffle($order);
+$segment = $config['hyper_team_count'] / $config['hyper_team_overflow_count'];
 
-$cell = <<<EOF
-            <div class="console-cell-outer">
-              <div class="console-cell-inner">
-                <ul>
-
-EOF
-. str_repeat(
+$lis = str_repeat(
   <<<EOF
                   <li></li>
 
 EOF
   ,
   $config['hyper_team_size']
-) . <<<EOF
-                </ul>
-              </div>
-            </div>
-
-EOF;
+);
 
 foreach ($order as $i => $item) {
   $delay = floor($item / 3);
+  $alum = $alums[$i];
 
   echo <<<EOF
           <div class="console-cell console-delay-$delay">
-$cell          </div>
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li>$alum (alum)</li>
+$lis                </ul>
+                </div>
+            </div>
+          </div>
 
 EOF;
 
-  if (!(
-    ($i + 1) %
-        (($config['hyper_team_count'] + 1) / $config['hyper_team_overflow'])
-  )) {
+  if (!(($i + 1) % $segment)) {
+    $alum = $overflow_alums[($i + 1) / $segment - 1];
+
     echo <<<EOF
           <div class="console-cell console-cell-overflow">
-$cell          </div>
+            <div class="console-cell-outer">
+              <div class="console-cell-inner">
+                <ul>
+                  <li>$alum (alum)</li>
+$lis                </ul>
+                </div>
+            </div>
+          </div>
 
 EOF;
 
