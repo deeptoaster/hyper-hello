@@ -256,6 +256,25 @@
 .overflow .console-cell-overflow {
   display: block;
 }
+.console-shield {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #000;
+  opacity: 0;
+  transition: opacity 600ms;
+}
+.complete .console-shield {
+  display: block;
+  opacity: 0.8;
+}
+.console-status, .console-status a, .console-status input {
+  text-align: center;
+  font: bold 1em/2 'Share Tech Mono', monospace;
+}
 .console-status {
   position: absolute;
   bottom: 1em;
@@ -268,12 +287,12 @@
   padding: 0.5em;
   background-color: #88995c;
   color: #000a08;
-  text-align: center;
-  font: bold 2em/2 'Share Tech Mono', monospace;
-  white-space: pre-line;
+  font-size: 2em;
   opacity: 0.9;
+  overflow: hidden;
   cursor: default;
-  transition: box-shadow 200ms, background-color 200ms, opacity 200ms;
+  transition: box-shadow 200ms, background-color 200ms, opacity 200ms,
+      bottom 600ms, width 600ms, margin 600ms, transform 600ms;
 }
 .console-status.error {
   box-shadow: 0 0 0.2em 0.1em #99745c;
@@ -281,6 +300,40 @@
 }
 .console-status:hover {
   opacity: 0.3;
+}
+.complete .console-status {
+  bottom: 50%;
+  width: 32em;
+  max-height: none;
+  margin: 0 -16em;
+  opacity: 0.9;
+  transform: translate(0, 50%);
+}
+.console-status p {
+  margin: 0;
+  white-space: pre-line;
+}
+.console-status b {
+  border: 1px solid;
+  padding: 0 0.5em;
+}
+.console-status a {
+  color: #253500;
+}
+.console-status a:hover {
+  color: #53642b;
+}
+.console-status input {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  border: none;
+  background: rgba(0, 0, 0, 0.1);
+  color: #253500;
+  user-select: auto;
+}
+#footer {
+  margin-left: 0;
+  margin-right: 0;
 }
 @keyframes blink {
   0% {

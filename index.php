@@ -1,10 +1,113 @@
 <?
 define(
   'HYPER_STATUS_0800',
-  "The time is now 8:00 Blacker Time.\nSelect a team to join."
+  "The time is now 8:00 Blacker Time.\nSelect a group to join."
 );
 
 include(__DIR__ . '/../lib/include.php');
+
+function hyper_token($a, $b) {
+  $tokens = array(
+    array(
+      'dramatic dolphin',
+      'headbanging handmaiden',
+      'emasculated emperor',
+      'scandalous saxophonist',
+      'shameful swan',
+      'flatfooted farthing',
+      'amalgamated ampersand',
+      'leathery loafer',
+      'meatiest marmot',
+      'readjusted robber'
+    ),
+    array(
+      'librarian lilith',
+      'imbibing iguana',
+      'subscription service',
+      'libidinal leprechaun',
+      'rubbernecking renter',
+      'unbuffered unicorn',
+      'ambiguous arbiter',
+      'unbeholden usurper',
+      'lubricated landmine',
+      'zabajone zeal'
+    ),
+    array(
+      'facial farter',
+      'duckbilled dowry',
+      'backcountry blowfish',
+      'decadent diddler',
+      'hickey hacker',
+      'vociferous volunteer',
+      'incognito ibis',
+      'alcoholic anthrax',
+      'sacrificial stingray',
+      'lockjawed lisp'
+    ),
+    array(
+      'radiant royalist',
+      'bodybuilding borderline',
+      'indoctrinating insurrection',
+      'jaded jumpsuit',
+      'midwestern militant',
+      'redefining reluctance',
+      'indignant imposter',
+      'redshifted rangoon',
+      'bedridden betrothed',
+      'undejected umbrella'
+    ),
+    array(
+      'overachieving onyx',
+      'overburdened operator',
+      'frescoed frenchman',
+      'greedy grifter',
+      'plebeian proletariat',
+      'unenforceable utilitarianism',
+      'freighter freedom',
+      'diethyl disulfide',
+      'poetic pillager',
+      'kneejerk killer'
+    ),
+    array(
+      'buffalo buffalo',
+      'affable archbishop',
+      'defecating doorstop',
+      'infidel intruder',
+      'offbeat ostracism',
+      'lifeform likely',
+      'infographic instigator',
+      'offshoot opposition',
+      'befriending butterflies',
+      'lifejacket lore'
+    ),
+    array(
+      'aggravating ardor',
+      'vagabond vortex',
+      'regicidal reputation',
+      'rigid rotor',
+      'argumentative apricot',
+      'highfalutin horseradish',
+      'zygogenetic zeal',
+      'mugshot mime',
+      'significant sauerkraut',
+      'gigajoule gargoyle'
+    ),
+    array(
+      'rehearsed retribution',
+      'exhibitionist ellipsis',
+      'ethical euthanasia',
+      'dehydrated dimwit',
+      'athletic allophone',
+      'ash asunder',
+      'unhygenic underwriter',
+      'ophthalmologist organization',
+      'ethnically eloquent',
+      'jah jah'
+    ),
+  );
+
+  return $tokens[$b][$a];
+}
 
 $config = array(
   'hyper_team_count' => 8,
@@ -32,11 +135,25 @@ $overflow_alums = array(
   'Xander'
 );
 
+$links = array(
+  'mFgq264',
+  'PnnjZtr',
+  'zYfC8dG',
+  '5WUZrgB',
+  'du7jvBR',
+  'FPyZaBg',
+  'q56sKQu',
+  'wkD23A2',
+  'bXhnpyf',
+  'pd8SQ6X'
+);
+
 session_start();
 $create = !file_exists($config['hyper_db']);
 $pdo = new PDO('sqlite:' . $config['hyper_db']);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$team_max = $config['hyper_team_count'] + $config['hyper_team_overflow_count'] - 1;
+$team_max =
+    $config['hyper_team_count'] + $config['hyper_team_overflow_count'] - 1;
 
 if ($create) {
   $pdo->exec(
@@ -183,9 +300,15 @@ EOF
 
         $statement = $pdo->prepare(
           <<<EOF
-SELECT `team`
+SELECT `user`,
+  `team`
 FROM `assignments`
-WHERE `user` = :user
+WHERE `team` = (
+  SELECT `team`
+  FROM `assignments`
+  WHERE `user` = :user
+)
+ORDER BY `user`
 EOF
         );
 
@@ -193,10 +316,18 @@ EOF
           ':user' => @$_SESSION['hyper_id']
         ));
 
-        $selected = $statement->fetch(PDO::FETCH_COLUMN);
+        $users = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-        if ($selected !== false) {
-          $response['selected'] = $selected;
+        if (count($users)) {
+          foreach ($users as $i => $user) {
+            if ($user['user'] == $_SESSION['hyper_id']) {
+              $response['selected'] = $user['team'];
+              $response['link'] =
+                  'https://discord.com/invite/' . $links[$user['team']];
+              $response['token'] = hyper_token($user['team'], $i);
+              break;
+            }
+          }
         }
 
         $response['message'] = trim(file_get_contents($config['hyper_status']));
@@ -311,9 +442,12 @@ EOF;
 }
 
 echo <<<EOF
-      var statusCache;
+      var statusCache = null;
       var timeout = 0;
+      var \$group;
+      var \$link;
       var \$status;
+      var \$token;
       var trigger = 'The time is now 8:05 Blacker Time.';
 
       function postfail(message) {
@@ -351,6 +485,10 @@ echo <<<EOF
           });
         }
 
+        \$group.text(data.selected);
+        \$link.text(data.link).attr('href', data.link);
+        \$token.val(data.token);
+
         if (statusCache == null) {
           \$status.text(data.message);
         } else {
@@ -366,8 +504,14 @@ echo <<<EOF
       }
 
       $(function() {
-        statusCache = null;
-        \$status = $('.console-status');
+        \$group = $('.console-status b');
+        \$link = $('.console-status a');
+        \$status = $('.console-status p:first-child');
+        \$token = $('.console-status input');
+
+        \$token.click(function() {
+          this.select();
+        });
 
         $('.console-cell-outer').click(function() {
           var \$active = $(this).parent().addClass('active');
@@ -397,8 +541,8 @@ if (!isset($_SESSION['hyper_id'])) {
           document.body.style.backgroundPosition = -e.clientX / 40 + 'px';
         });
 
-        $('input').change(function() {
-          if ($('input').filter(function() {
+        $('#main input').change(function() {
+          if ($('#main input').filter(function() {
             return $(this).val();
           }).length >= 5) {
             setTimeout(function() {
@@ -410,11 +554,11 @@ if (!isset($_SESSION['hyper_id'])) {
         $('form').submit(function() {
           \$error.detach();
 
-          if ($('input[type=text], textarea').filter(function() {
+          if ($('#main input[type=text], textarea').filter(function() {
             return !$(this).val();
           }).length !== 0) {
             prefail('Please ensure that all fields contain a valid response.');
-          } else if ($('input[type=checkbox]').filter(function() {
+          } else if ($('#main input[type=checkbox]').filter(function() {
             return !$(this).prop('checked');
           }).length !== 0) {
             prefail('Please ensure that all checkboxes are checked.');
@@ -530,6 +674,16 @@ EOF;
           </div>
         </div>
       </form>
+
+EOF;
+
+  print_footer(
+    'Sarah Crucilla, Alex Cui, Erik Herrera, Brendan Hollaway, Anant Kale',
+    'David Kornfeld, Nikita Kosolobov, Tye Lamkin, Mei-Ling Laures',
+    'Sierra Lopezalles, Qiaoqiao Mu, Ray Sun, Bethany Suter'
+  );
+
+  echo <<<EOF
     </div>
 
 EOF;
@@ -589,7 +743,7 @@ EOF;
             <div class="console-cell-outer">
               <div class="console-cell-inner">
                 <ul>
-                  <li>$alum (alum)</li>
+                  <li>$alum (overflow)</li>
 $lis                </ul>
                 </div>
             </div>
@@ -601,7 +755,14 @@ EOF;
 }
 ?>        </div>
       </div>
-      <div class="console-status"></div>
+      <div class="console-shield"></div>
+      <div class="console-status">
+        <p></p>
+        <p>To continue, join <a href=""></a>.</p>
+        <p>Your group number is <b></b>. Here is your personal token:</p>
+        <input type="text" readonly="readonly" />
+        <p>If you forget, you can always come back to this page.</p>
+      </div>
     </div>
   </body>
 </html>
