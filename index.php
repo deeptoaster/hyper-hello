@@ -8,6 +8,7 @@ include(__DIR__ . '/../lib/include.php');
 
 $config = array(
   'hyper_team_count' => 8,
+  'hyper_team_overflow' => 2,
   'hyper_team_size' => 8,
   'hyper_db' => 'hyper.db',
   'hyper_status' => 'hyper.txt'
@@ -17,6 +18,7 @@ session_start();
 $create = !file_exists($config['hyper_db']);
 $pdo = new PDO('sqlite:' . $config['hyper_db']);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$team_max = $config['hyper_team_count'] + $config['hyper_team_overflow'] - 1;
 
 if ($create) {
   $pdo->exec(
@@ -91,9 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $team = (int)$_POST['team'];
 
-        if ($team < 0 || $team >= $config['hyper_team_count']) {
-          $team_max = $config['hyper_team_count'] - 1;
-
+        if ($team < 0 || $team > $team_max) {
           throw new OutOfBoundsException(
             "Team ID must be between 0 and $team_max."
           );
@@ -319,7 +319,7 @@ echo <<<EOF
       function update(data) {
         var \$cells = $('.console-cell');
 
-        for (var i = 0; i < $config[hyper_team_count]; i++) {
+        for (var i = 0; i <= $team_max; i++) {
           \$cells
               .eq(i)
               .toggleClass('selected', data.selected == i)
@@ -526,31 +526,46 @@ EOF;
 $order = range(0, $config['hyper_team_count'] - 1);
 shuffle($order);
 
-foreach ($order as $item) {
-  $delay = floor($item / 3);
-
-  echo <<<EOF
-          <div class="console-cell console-delay-$delay">
+$cell = <<<EOF
             <div class="console-cell-outer">
               <div class="console-cell-inner">
                 <ul>
 
-EOF;
-
-  for ($i = 0; $i < $config['hyper_team_size']; $i++) {
-    echo <<<EOF
+EOF
+. str_repeat(
+  <<<EOF
                   <li></li>
 
-EOF;
-  }
-
-  echo <<<EOF
+EOF
+  ,
+  $config['hyper_team_size']
+) . <<<EOF
                 </ul>
               </div>
             </div>
-          </div>
 
 EOF;
+
+foreach ($order as $i => $item) {
+  $delay = floor($item / 3);
+
+  echo <<<EOF
+          <div class="console-cell console-delay-$delay">
+$cell          </div>
+
+EOF;
+
+  if (!(
+    ($i + 1) %
+        (($config['hyper_team_count'] + 1) / $config['hyper_team_overflow'])
+  )) {
+    echo <<<EOF
+          <div class="console-cell console-cell-overflow">
+$cell          </div>
+
+EOF;
+
+  }
 }
 ?>        </div>
       </div>

@@ -160,6 +160,9 @@
   width: 25%;
   height: 50%;
 }
+.overflow .console-cell {
+  width: 20%;
+}
 .console-cell-outer, .console-cell-inner {
   position: absolute;
   top: 0.5em;
@@ -211,6 +214,9 @@
   font-size: 1.2em;
   line-height: 1.1;
 }
+.overflow .console-cell ul {
+  font-size: 1em;
+}
 .console-cell-outer::after {
   content: 'JOIN';
   display: none;
@@ -243,6 +249,12 @@
   font-size: 6em;
   line-height: 3;
   cursor: default;
+}
+.console-cell-overflow {
+  display: none;
+}
+.overflow .console-cell-overflow {
+  display: block;
 }
 .console-status {
   position: absolute;
