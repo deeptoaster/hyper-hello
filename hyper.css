@@ -273,7 +273,7 @@
 }
 .console-status, .console-status a, .console-status input {
   text-align: center;
-  font: bold 1em/2 'Share Tech Mono', monospace;
+  font: bold 1em/1.5 'Share Tech Mono', monospace;
 }
 .console-status {
   position: absolute;

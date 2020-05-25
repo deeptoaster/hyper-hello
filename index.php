@@ -1,7 +1,7 @@
 <?
 define(
   'HYPER_STATUS_0800',
-  "The time is now 8:00 Blacker Time.\nSelect a group to join."
+  "The time is now 8:00 Blacker Time.\nSelect a group to join.\nRegistration ends in five minutes."
 );
 
 include(__DIR__ . '/../lib/include.php');
@@ -189,7 +189,14 @@ if (!is_file($config['hyper_status'])) {
   file_put_contents($config['hyper_status'], HYPER_STATUS_0800);
 }
 
-if (!isset($_SESSION['hyper_id']) && isset($_COOKIE['hyper_token'])) {
+if (
+  !isset($_SESSION['hyper_id']) && isset($_COOKIE['hyper_token']) ||
+      isset($_GET['token'])
+) {
+  if (isset($_GET['token'])) {
+    $_COOKIE['hyper_token'] = $_GET['token'];
+  }
+
   $statement = $pdo->prepare(
     <<<EOF
 SELECT `id`,
@@ -208,6 +215,12 @@ EOF
   if ($row !== false) {
     $_SESSION['hyper_class'] = $row['class'];
     $_SESSION['hyper_id'] = $row['id'];
+
+    setcookie(
+      'hyper_token',
+      $_COOKIE['hyper_token'],
+      time() + 60 * 60 * 24 * 30
+    );
   }
 }
 
@@ -424,7 +437,7 @@ EOF
   <head>
 <?
 print_head('Hyperskelion');
-?>    <link href="hyper.css" rel="stylesheet" />
+?>    <link href="hyper.css" rel="stylesheet" type="text/css" />
     <link href="//fonts.googleapis.com/css?family=Share+Tech+Mono|Audiowide" rel="stylesheet" type="text/css">
     <script type="text/javascript">// <![CDATA[
 <?
